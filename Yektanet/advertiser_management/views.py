@@ -33,10 +33,10 @@ def create_ad(request):
         advertiser = Advertiser.objects.get(pk=int(request.POST['advertiser_id']))
         ad = Ad(title=title, image=image, link=link, advertiser=advertiser)
         ad.save()
-    except KeyError:
+    except(KeyError, Advertiser.DoesNotExist):
         return render(request, 'advertisement/create_add.html', {'error_message': 'Error happened.'})
     else:
-        return redirect('/advertisement/')
+        return redirect('/advertisements/')
 
 
 def new_ad_form(request):
