@@ -5,3 +5,6 @@ pyvenv.cfg
 .idea/
 Yektanet/db.sqlite3
 Yektanet/Yektanet/__pycache__/
+Yektanet/advertiser_management/__pycache__/
+Yektanet/advertiser_management/migrations/__pycache__/
+
