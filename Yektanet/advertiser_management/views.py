@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, redirect
 from django.views.generic.base import RedirectView
 
 from .models import Advertiser, Ad
@@ -26,4 +26,18 @@ class AdClickRedirectView(RedirectView):
 
 
 def create_ad(request):
-    pass
+    try:
+        title = request.POST['title']
+        image = request.POST['image']
+        link = request.POST['link']
+        advertiser = Advertiser.objects.get(pk=int(request.POST['advertiser_id']))
+        ad = Ad(title=title, image=image, link=link, advertiser=advertiser)
+        ad.save()
+    except KeyError:
+        return render(request, 'advertisement/create_add.html', {'error_message': 'Error happened.'})
+    else:
+        return redirect('/advertisement/')
+
+
+def new_ad_form(request):
+    return render(request, 'advertisement/create_add.html', {})

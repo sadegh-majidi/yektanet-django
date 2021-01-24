@@ -13,16 +13,24 @@
 
             {% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
 
-            <form action="{% url 'polls:vote' question.id %}" method="post" class="form">
+            <form action="{% url 'advertiser_management:create' %}" method="post" class="form">
             {% csrf_token %}
                 <label for="advertiser_id">Advertiser ID</label>
+                <br>
                 <input type="number" name="advertiser_id" id="advertiser_id">
+                <br>
                 <label for="image">Image</label>
+                <br>
                 <input type="text" name="image" id="image">
+                <br>
                 <label for="title">Title</label>
+                <br>
                 <input type="text" name="title" id="title">
+                <br>
                 <label for="link">URL</label>
+                <br>
                 <input type="text" name="link" id="link">
+                <br>
                 <input type="submit" value="Save">
             </form>
         </div>
