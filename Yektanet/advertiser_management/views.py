@@ -1,4 +1,7 @@
 from django.shortcuts import render
+from django.shortcuts import get_object_or_404
+from django.views.generic.base import RedirectView
+
 from .models import Advertiser, Ad
 
 
@@ -12,8 +15,14 @@ def show_all_ads(request):
     return render(request, 'advertisement/ads.html', context)
 
 
-def click_ad(request, ad_id):
-    pass
+class AdClickRedirectView(RedirectView):
+    permanent = False
+    query_string = True
+
+    def get_redirect_url(self, *args, **kwargs):
+        ad = get_object_or_404(Ad, pk=kwargs['ad_id'])
+        ad.inc_clicks()
+        return ad.link
 
 
 def create_ad(request):
