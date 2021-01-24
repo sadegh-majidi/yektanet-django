@@ -26,7 +26,7 @@ class Advertiser(BaseAdvertising):
 
 class Ad(BaseAdvertising):
     title = models.CharField(max_length=50, verbose_name='Ad Title')
-    img_URL = models.CharField(max_length=2000, verbose_name='Image Address')
+    image = models.CharField(max_length=2000, verbose_name='Image Address')
     link = models.CharField(max_length=2000, verbose_name='Link')
     advertiser = models.ForeignKey(
         to=Advertiser,
