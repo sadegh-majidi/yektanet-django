@@ -17,19 +17,19 @@
             {% csrf_token %}
                 <label for="advertiser_id">Advertiser ID</label>
                 <br>
-                <input type="number" name="advertiser_id" id="advertiser_id">
+                <input type="number" name="advertiser_id" id="advertiser_id" required>
                 <br>
                 <label for="image">Image</label>
                 <br>
-                <input type="text" name="image" id="image">
+                <input type="text" name="image" id="image" required>
                 <br>
                 <label for="title">Title</label>
                 <br>
-                <input type="text" name="title" id="title">
+                <input type="text" name="title" id="title" required>
                 <br>
                 <label for="link">URL</label>
                 <br>
-                <input type="text" name="link" id="link">
+                <input type="text" name="link" id="link" required>
                 <br>
                 <input type="submit" value="Save">
             </form>

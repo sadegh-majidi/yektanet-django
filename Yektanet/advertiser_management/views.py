@@ -31,7 +31,6 @@ def create_ad(request):
         title = request.POST['title']
         image = request.POST['image']
         link = request.POST['link']
-        assert request.POST['advertiser_id'], 'advertiser id should be entered.'
         advertiser = Advertiser.objects.get(pk=int(request.POST['advertiser_id']))
         assert link.startswith('http'), 'Links should start with http'
         ad = Ad(title=title, image=image, link=link, advertiser=advertiser)
