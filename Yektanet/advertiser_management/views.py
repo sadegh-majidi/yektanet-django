@@ -7,9 +7,10 @@ from .models import Advertiser, Ad
 
 
 def show_all_ads(request):
-    for ad in Ad.objects.all():
-        ad.inc_views()
     advertisers = Advertiser.objects.all()
+    for advertiser in advertisers:
+        for ad in advertiser.ads.all():
+            ad.inc_views()
     context = {
         'advertisers': advertisers,
     }
@@ -34,8 +35,7 @@ def create_ad(request):
         link = request.POST['link']
         advertiser = Advertiser.objects.get(pk=int(request.POST['advertiser_id']))
         assert link.startswith('http'), 'Links should start with http'
-        ad = Ad(title=title, image=image, link=link, advertiser=advertiser)
-        ad.save()
+        Ad.objects.create(title=title, image=image, link=link, advertiser=advertiser)
     except(KeyError, Advertiser.DoesNotExist, AssertionError, ValidationError) as e:
         request.session['error_message'] = str(e)
         return redirect(reverse('advertiser_management:new_form'))
