@@ -15,7 +15,7 @@
                 <div class="row">
 		    {% for ad in advertiser.ads.all %}
 		        <div class="card col-md-2 p-0 mx-2">
-		            <a href="/advertisements/{{ ad.id }}/">
+		            <a href="click/{{ ad.id }}/">
 		                <img src="{{ ad.image }}"
 		                     class="card-img-top">
 		                <div class="card-body">
@@ -30,7 +30,7 @@
     {% endfor %}
 
     <br>
-    <a href="/advertisements/new/"><h3>Create new Ad!</h3></a>
+    <a href="new/"><h3>Create new Ad !!</h3></a>
 </div>
 </body>
 </html>
