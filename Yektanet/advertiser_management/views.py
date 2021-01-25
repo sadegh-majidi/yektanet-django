@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from django.shortcuts import get_object_or_404, redirect, reverse
 from django.views.generic.base import RedirectView
+from django.core.exceptions import ValidationError
 
 from .models import Advertiser, Ad
 
@@ -35,7 +36,7 @@ def create_ad(request):
         assert link.startswith('http'), 'Links should start with http'
         ad = Ad(title=title, image=image, link=link, advertiser=advertiser)
         ad.save()
-    except(KeyError, Advertiser.DoesNotExist, AssertionError) as e:
+    except(KeyError, Advertiser.DoesNotExist, AssertionError, ValidationError) as e:
         request.session['error_message'] = str(e)
         return redirect(reverse('advertiser_management:new_form'))
     else:
