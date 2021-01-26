@@ -3,14 +3,14 @@ from django.shortcuts import get_object_or_404, redirect, reverse
 from django.views.generic.base import RedirectView
 from django.core.exceptions import ValidationError
 
-from .models import Advertiser, Ad
+from .models import Advertiser, Ad, View, Click
 
 
 def show_all_ads(request):
     advertisers = Advertiser.objects.all()
     for advertiser in advertisers:
         for ad in advertiser.ads.all():
-            ad.inc_views()
+            View.objects.create(user_ip=request.user_ip, ad=ad)
     context = {
         'advertisers': advertisers,
     }
@@ -24,7 +24,7 @@ class AdClickRedirectView(RedirectView):
 
     def get_redirect_url(self, *args, **kwargs):
         ad = get_object_or_404(Ad, pk=kwargs['ad_id'])
-        ad.inc_clicks()
+        Click.objects.create(user_ip=self.request.user_ip, ad=ad)
         return ad.link
 
 
