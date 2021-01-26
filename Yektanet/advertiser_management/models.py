@@ -18,6 +18,7 @@ class Ad(models.Model):
         verbose_name='Advertiser',
         related_name='ads'
     )
+    approve = models.BooleanField(default=False, verbose_name='Approved')
 
     def __str__(self):
         return self.title
