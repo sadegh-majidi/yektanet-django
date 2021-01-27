@@ -1,7 +1,10 @@
+import django.views.generic.base as generic
 from django.shortcuts import get_object_or_404, reverse
 from django.views.generic.list import ListView
 from django.views.generic.base import RedirectView, TemplateView
 from django.core.exceptions import ValidationError
+from django.db.models import Count, Subquery, F, Avg, DurationField, OuterRef, ExpressionWrapper
+from django.db.models.functions import TruncHour
 
 from .models import Advertiser, Ad, View, Click
 
@@ -58,3 +61,19 @@ class NewAdFormView(TemplateView):
             context['error_message'] = self.request.session.get('error_message')
             del self.request.session['error_message']
         return context
+
+
+class StatisticsReportView(generic.View):
+    def get_sum_of_clicks_per_hour(self):
+        result = Click.objects.annotate(hour=TruncHour('time')).values('ad', 'hour').annotate(view=Count('id')).all()
+        return result
+
+    def get_sum_of_views_per_hour(self):
+        result = View.objects.annotate(hour=TruncHour('time')).values('ad', 'hour').annotate(view=Count('id')).all()
+        return result
+
+    def get_clicks_per_view_rate(self):
+        pass
+
+    def get_average_time_difference_view_click(self):
+        pass
