@@ -1,20 +1,21 @@
-from django.shortcuts import render
-from django.shortcuts import get_object_or_404, redirect, reverse
-from django.views.generic.base import RedirectView
+from django.shortcuts import get_object_or_404, reverse
+from django.views.generic.list import ListView
+from django.views.generic.base import RedirectView, TemplateView
 from django.core.exceptions import ValidationError
 
 from .models import Advertiser, Ad, View, Click
 
 
-def show_all_ads(request):
-    advertisers = Advertiser.objects.all()
-    for advertiser in advertisers:
-        for ad in advertiser.ads.all():
-            View.objects.create(user_ip=request.user_ip, ad=ad)
-    context = {
-        'advertisers': advertisers,
-    }
-    return render(request, 'advertisement/ads.html', context)
+class ShowAllAdsListView(ListView):
+    template_name = 'advertisement/ads.html'
+    context_object_name = 'advertisers'
+
+    def get_queryset(self):
+        advertisers = Advertiser.objects.all()
+        for advertiser in advertisers:
+            for ad in advertiser.ads.all():
+                View.objects.create(user_ip=self.request.user_ip, ad=ad)
+        return advertisers
 
 
 class AdClickRedirectView(RedirectView):
@@ -28,24 +29,32 @@ class AdClickRedirectView(RedirectView):
         return ad.link
 
 
-def create_ad(request):
-    try:
-        title = request.POST['title']
-        image = request.POST['image']
-        link = request.POST['link']
-        advertiser = Advertiser.objects.get(pk=int(request.POST['advertiser_id']))
-        assert link.startswith('http'), 'Links should start with http'
-        Ad.objects.create(title=title, image=image, link=link, advertiser=advertiser)
-    except(KeyError, Advertiser.DoesNotExist, AssertionError, ValidationError) as e:
-        request.session['error_message'] = str(e)
-        return redirect(reverse('advertiser_management:new_form'))
-    else:
-        return redirect('/advertiser_management/')
+class CreateAdView(RedirectView):
+    pattern_name = 'create'
+    permanent = False
+    query_string = True
+
+    def get_redirect_url(self, *args, **kwargs):
+        try:
+            title = self.request.POST['title']
+            image = self.request.POST['image']
+            link = self.request.POST['link']
+            advertiser = Advertiser.objects.get(pk=int(self.request.POST['advertiser_id']))
+            assert link.startswith('http'), 'Links should start with http'
+            Ad.objects.create(title=title, image=image, link=link, advertiser=advertiser)
+        except(KeyError, Advertiser.DoesNotExist, AssertionError, ValidationError) as e:
+            self.request.session['error_message'] = str(e)
+            return reverse('advertiser_management:new_form')
+        else:
+            return reverse('advertiser_management:show_all')
 
 
-def new_ad_form(request, *args, **kwargs):
-    context = {}
-    if 'error_message' in request.session:
-        context['error_message'] = request.session.get('error_message')
-        del request.session['error_message']
-    return render(request, 'advertisement/create_add.html', context)
+class NewAdFormView(TemplateView):
+    template_name = 'advertisement/create_add.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if 'error_message' in self.request.session:
+            context['error_message'] = self.request.session.get('error_message')
+            del self.request.session['error_message']
+        return context
