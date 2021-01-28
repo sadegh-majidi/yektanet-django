@@ -87,6 +87,7 @@ def get_view_clicks_per_view_rate_summary():
             'ad_id': view['ad'],
             'rate': clicks / views,
         })
+    result = sorted(result, key=lambda item: item['rate'], reverse=True)
     return result
 
 
@@ -103,7 +104,7 @@ def get_clicks_per_view_rate_hour():
             'hour': view['hour'],
             'rate': clicks / views,
         })
-    result = sorted(result, key=lambda item: item['hour'])
+    result = sorted(result, key=lambda item: (item['rate'], item['hour']), reverse=True)
     return result
 
 
@@ -118,6 +119,21 @@ def get_average_time_difference_view_click():
         )
     ).aggregate(average_time=Avg('time_diff', output_field=DurationField())).get('average_time')
     return result
+
+
+'''
+    total = timezone.timedelta()
+    count = 0
+    for click in Click.objects.all():
+        duration = View.objects.all().filter(
+            ad_id=click.ad_id,
+            user_ip=click.user_ip,
+            time__lte=click.time
+        ).annotate(diff=click.time - F('time')).order_by('diff')
+        print(type(duration))
+        total = total + duration[0].diff
+        count += 1
+        '''
 
 
 class ClickReporterView(generic.View):
