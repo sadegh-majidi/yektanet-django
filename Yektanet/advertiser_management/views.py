@@ -3,8 +3,10 @@ from django.shortcuts import get_object_or_404, reverse
 from django.views.generic.list import ListView
 from django.views.generic.base import RedirectView, TemplateView
 from django.core.exceptions import ValidationError
-from django.db.models import Count, Subquery, F, Avg, DurationField, OuterRef, ExpressionWrapper
+from django.db.models import Count, Subquery, F, Avg, DurationField, OuterRef
 from django.db.models.functions import TruncHour
+from django.http.response import JsonResponse
+from django.utils import timezone
 
 from .models import Advertiser, Ad, View, Click
 
@@ -17,7 +19,7 @@ class ShowAllAdsListView(ListView):
         advertisers = Advertiser.objects.all()
         for advertiser in advertisers:
             for ad in advertiser.ads.all():
-                View.objects.create(user_ip=self.request.user_ip, ad=ad)
+                View.objects.create(user_ip=self.request.user_ip, ad=ad, time=timezone.now())
         return advertisers
 
 
@@ -28,7 +30,7 @@ class AdClickRedirectView(RedirectView):
 
     def get_redirect_url(self, *args, **kwargs):
         ad = get_object_or_404(Ad, pk=kwargs['ad_id'])
-        Click.objects.create(user_ip=self.request.user_ip, ad=ad)
+        Click.objects.create(user_ip=self.request.user_ip, ad=ad, time=timezone.now())
         return ad.link
 
 
@@ -63,17 +65,81 @@ class NewAdFormView(TemplateView):
         return context
 
 
-class StatisticsReportView(generic.View):
-    def get_sum_of_clicks_per_hour(self):
-        result = Click.objects.annotate(hour=TruncHour('time')).values('ad', 'hour').annotate(view=Count('id')).all()
-        return result
+def get_sum_of_clicks_per_hour():
+    result = Click.objects.all().annotate(hour=TruncHour('time')).values('ad', 'hour').annotate(click=Count('id'))
+    return result
 
-    def get_sum_of_views_per_hour(self):
-        result = View.objects.annotate(hour=TruncHour('time')).values('ad', 'hour').annotate(view=Count('id')).all()
-        return result
 
-    def get_clicks_per_view_rate(self):
-        pass
+def get_sum_of_views_per_hour():
+    result = View.objects.all().annotate(hour=TruncHour('time')).values('ad', 'hour').annotate(view=Count('id'))
+    return result
 
-    def get_average_time_difference_view_click(self):
-        pass
+
+def get_view_clicks_per_view_rate_summary():
+    views_set = View.objects.all().values('ad').annotate(view=Count('id'))
+    clicks_set = Click.objects.all().values('ad').annotate(click=Count('id'))
+    clicks_modified_set = {item['ad']: item for item in clicks_set}
+    result = []
+    for view in views_set:
+        views = view['view']
+        clicks = clicks_modified_set.get(view['ad'], {}).get('click', 0)
+        result.append({
+            'ad_id': view['ad'],
+            'rate': clicks / views,
+        })
+    return result
+
+
+def get_clicks_per_view_rate_hour():
+    views_set = get_sum_of_views_per_hour()
+    clicks_set = get_sum_of_clicks_per_hour()
+    clicks_modified_set = {(item['ad'], item['hour']): item for item in clicks_set}
+    result = []
+    for view in views_set:
+        views = view['view']
+        clicks = clicks_modified_set.get((view['ad'], view['hour']), {}).get('click', 0)
+        result.append({
+            'ad_id': view['ad'],
+            'hour': view['hour'],
+            'rate': clicks / views,
+        })
+    result = sorted(result, key=lambda item: item['hour'])
+    return result
+
+
+def get_average_time_difference_view_click():
+    result = Click.objects.annotate(
+        time_diff=Subquery(
+            View.objects.filter(
+                ad=OuterRef('ad'),
+                user_ip=OuterRef('user_ip'),
+                time__lte=OuterRef('time')
+            ).annotate(diff=OuterRef('time') - F('time')).order_by('diff').values('diff')[:1]
+        )
+    ).aggregate(average_time=Avg('time_diff', output_field=DurationField())).get('average_time')
+    return result
+
+
+class ClickReporterView(generic.View):
+    def get(self, request):
+        return JsonResponse(list(get_sum_of_clicks_per_hour()), safe=False)
+
+
+class ViewReporterView(generic.View):
+    def get(self, request):
+        return JsonResponse(list(get_sum_of_views_per_hour()), safe=False)
+
+
+class RateSummaryView(generic.View):
+    def get(self, request):
+        return JsonResponse(list(get_view_clicks_per_view_rate_summary()), safe=False)
+
+
+class RatePerHourView(generic.View):
+    def get(self, request):
+        return JsonResponse(list(get_clicks_per_view_rate_hour()), safe=False)
+
+
+class AverageTimeBetweenViewAndClickView(generic.View):
+    def get(self, request):
+        return JsonResponse({'average_time_between_view_and_click': str(get_average_time_difference_view_click())})

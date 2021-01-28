@@ -25,7 +25,7 @@ class Ad(models.Model):
 
 
 class BaseAdInfo(models.Model):
-    time = models.DateTimeField(auto_now_add=True, verbose_name='Time')
+    time = models.DateTimeField(verbose_name='Time')
     user_ip = models.GenericIPAddressField(verbose_name='User IP')
 
     class Meta:
