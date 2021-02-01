@@ -2,7 +2,7 @@ from django.urls import path
 
 from .views import AdClickRedirectView, ShowAllAdsListView, NewAdFormView, CreateAdView, ClickReporterView,\
     RateSummaryView, RatePerHourView, ViewReporterView, AverageTimeBetweenViewAndClickView, AdvertiserLoginApiView, \
-    AdvertiserLogoutApiView
+    AdvertiserLogoutApiView, AdvertiserRegisterApiView
 
 app_name = 'advertiser_management'
 urlpatterns = [
@@ -15,6 +15,7 @@ urlpatterns = [
     path('details/rate/summary', RateSummaryView.as_view(), name='rate_summary'),
     path('details/rate/hour-based', RatePerHourView.as_view(), name='rate_summary_hour'),
     path('details/duartion/avarage-view-click', AverageTimeBetweenViewAndClickView.as_view(), name='time_difference'),
+    path('auth/register', AdvertiserRegisterApiView.as_view(), name='register'),
     path('auth/login', AdvertiserLoginApiView.as_view(), name='login'),
     path('auth/logout', AdvertiserLogoutApiView.as_view(), name='logout'),
 ]

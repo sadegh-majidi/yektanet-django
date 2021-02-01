@@ -16,9 +16,9 @@ from rest_framework.response import Response
 from .serializers.ad_serializer import AdSerializer
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.authentication import TokenAuthentication
-from rest_framework.status import HTTP_403_FORBIDDEN, HTTP_200_OK
+from rest_framework.status import HTTP_403_FORBIDDEN, HTTP_200_OK, HTTP_201_CREATED
 from rest_framework.authtoken.models import Token
-from .serializers.click_serializer import ClickSerializer
+from .serializers.advertiser_serializer import AdvertiserSerializer
 from .serializers.login_credential_serializer import LoginCredentialSerializer
 from .permissions import IsAdvertiser
 
@@ -184,6 +184,16 @@ class RatePerHourView(generic.View):
 class AverageTimeBetweenViewAndClickView(generic.View):
     def get(self, request):
         return JsonResponse({'average_time_between_view_and_click': str(get_average_time_difference_view_click())})
+
+
+class AdvertiserRegisterApiView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = AdvertiserSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(status=HTTP_201_CREATED)
 
 
 class AdvertiserLoginApiView(APIView):
