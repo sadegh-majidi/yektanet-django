@@ -1,7 +1,8 @@
 from django.db import models
+from django.contrib.auth.models import User
 
 
-class Advertiser(models.Model):
+class Advertiser(User):
     name = models.CharField(max_length=70, verbose_name='Advertiser Name')
 
     def __str__(self):

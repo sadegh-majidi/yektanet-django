@@ -3,8 +3,8 @@ from django.shortcuts import get_object_or_404, reverse
 from django.views.generic.list import ListView
 from django.views.generic.base import RedirectView, TemplateView
 from django.core.exceptions import ValidationError
-from django.db.models import Count, Subquery, F, Avg, DurationField, OuterRef
-from django.db.models.functions import TruncHour
+from django.db.models import Count, Subquery, F, Avg, DurationField, OuterRef, ExpressionWrapper, FloatField
+from django.db.models.functions import TruncHour, Cast
 from django.http.response import JsonResponse
 from django.utils import timezone
 
@@ -44,7 +44,7 @@ class CreateAdView(RedirectView):
             title = self.request.POST['title']
             image = self.request.POST['image']
             link = self.request.POST['link']
-            advertiser = Advertiser.objects.get(pk=int(self.request.POST['advertiser_id']))
+            advertiser = Advertiser.objects.get(username=self.request.POST['advertiser_username'])
             assert link.startswith('http'), 'Links should start with http'
             Ad.objects.create(title=title, image=image, link=link, advertiser=advertiser)
         except(KeyError, Advertiser.DoesNotExist, AssertionError, ValidationError) as e:
@@ -76,6 +76,14 @@ def get_sum_of_views_per_hour():
 
 
 def get_view_clicks_per_view_rate_summary():
+    result = Ad.objects.all().annotate(view_count=Count('views')).annotate(click_count=Count('clicks')). \
+        annotate(
+        rate=ExpressionWrapper(
+            (Cast('click_count', FloatField()) / F('view_count')),
+            output_field=FloatField(),
+        ),
+    ).order_by('-rate').values('id', 'rate')
+    '''
     views_set = View.objects.all().values('ad').annotate(view=Count('id'))
     clicks_set = Click.objects.all().values('ad').annotate(click=Count('id'))
     clicks_modified_set = {item['ad']: item for item in clicks_set}
@@ -88,6 +96,7 @@ def get_view_clicks_per_view_rate_summary():
             'rate': clicks / views,
         })
     result = sorted(result, key=lambda item: item['rate'], reverse=True)
+    '''
     return result
 
 

@@ -15,9 +15,9 @@
 
             <form action="{% url 'advertiser_management:create' %}" method="post" class="form">
             {% csrf_token %}
-                <label for="advertiser_id">Advertiser ID</label>
+                <label for="advertiser_username">Advertiser Username</label>
                 <br>
-                <input type="number" name="advertiser_id" id="advertiser_id" required>
+                <input type="text" name="advertiser_username" id="advertiser_username" maxlength="50" required>
                 <br>
                 <label for="image">Image</label>
                 <br>

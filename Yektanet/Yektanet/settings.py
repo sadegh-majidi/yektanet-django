@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
 ]
 
 MIDDLEWARE = [
@@ -78,7 +79,7 @@ WSGI_APPLICATION = 'Yektanet.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'online_advertisement',
+        'NAME': 'online_advertisement_sys',
         'USER': 'sadegh',
         'PASSWORD': '12345s',
         'HOST': 'localhost',
