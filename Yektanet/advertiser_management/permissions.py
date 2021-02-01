@@ -1,9 +1,7 @@
 from rest_framework.permissions import BasePermission
+from .models import Advertiser
 
 
 class IsAdvertiser(BasePermission):
     def has_permission(self, request, view):
-        try:
-            return bool(not request.user.advertiser.is_deleted)
-        except:
-            return False
+        return Advertiser.objects.all().filter(username=request.user.username).exists()

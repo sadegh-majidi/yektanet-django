@@ -14,6 +14,13 @@ from rest_framework.generics import GenericAPIView, CreateAPIView
 from rest_framework.renderers import TemplateHTMLRenderer
 from rest_framework.response import Response
 from .serializers.ad_serializer import AdSerializer
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.authentication import TokenAuthentication
+from rest_framework.status import HTTP_403_FORBIDDEN, HTTP_200_OK
+from rest_framework.authtoken.models import Token
+from .serializers.click_serializer import ClickSerializer
+from .serializers.login_credential_serializer import LoginCredentialSerializer
+from .permissions import IsAdvertiser
 
 from .models import Advertiser, Ad, View, Click
 
@@ -42,9 +49,11 @@ class AdClickRedirectView(RedirectView):
         return ad.link
 
 
-class CreateAdView1(CreateAPIView):
+class CreateAdView(CreateAPIView):
     serializer_class = AdSerializer
     queryset = Ad.objects.all()
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated & IsAdvertiser]
 
     def create(self, request, *args, **kwargs):
         try:
@@ -60,35 +69,16 @@ class CreateAdView1(CreateAPIView):
         serializer.save(advertiser=advertiser)
 
 
-class CreateAdView(RedirectView):
-    pattern_name = 'create'
-    permanent = False
-    query_string = True
-
-    def get_redirect_url(self, *args, **kwargs):
-        try:
-            title = self.request.POST['title']
-            image = self.request.POST['image']
-            link = self.request.POST['link']
-            advertiser = Advertiser.objects.get(username=self.request.POST['advertiser_username'])
-            assert link.startswith('http'), 'Links should start with http'
-            Ad.objects.create(title=title, image=image, link=link, advertiser=advertiser)
-        except(KeyError, Advertiser.DoesNotExist, AssertionError, ValidationError) as e:
-            self.request.session['error_message'] = str(e)
-            return reverse('advertiser_management:new_form')
-        else:
-            return reverse('advertiser_management:show_all')
-
-
-class NewAdFormView(TemplateView):
+class NewAdFormView(APIView):
     template_name = 'advertisement/create_add.html'
+    renderer_classes = [TemplateHTMLRenderer]
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
+    def get(self, request):
+        context = {}
         if 'error_message' in self.request.session:
             context['error_message'] = self.request.session.get('error_message')
             del self.request.session['error_message']
-        return context
+        return Response(context)
 
 
 def get_sum_of_clicks_per_hour():
@@ -194,3 +184,31 @@ class RatePerHourView(generic.View):
 class AverageTimeBetweenViewAndClickView(generic.View):
     def get(self, request):
         return JsonResponse({'average_time_between_view_and_click': str(get_average_time_difference_view_click())})
+
+
+class AdvertiserLoginApiView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = LoginCredentialSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        valid_data = serializer.validated_data
+        advertiser = get_object_or_404(Advertiser, username=valid_data.get('username', ''))
+        password = valid_data.get('password', '')
+        if advertiser.password != password:
+            raise ValidationError(message='Wrong password.', code=HTTP_403_FORBIDDEN)
+        token, created = Token.objects.get_or_create(user=advertiser)
+        return Response(
+            data={
+                'auth_token': token.key
+            },
+            status=HTTP_200_OK
+        )
+
+
+class AdvertiserLogoutApiView(APIView):
+    permission_classes = [IsAuthenticated & IsAdvertiser]
+
+    def get(self, request):
+        request.user.auth_token.delete()
+        return Response(status=HTTP_200_OK)

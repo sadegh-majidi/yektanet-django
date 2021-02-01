@@ -7,4 +7,5 @@ Yektanet/db.sqlite3
 Yektanet/Yektanet/__pycache__/
 Yektanet/advertiser_management/__pycache__/
 Yektanet/advertiser_management/migrations/__pycache__/
+Yektanet/advertiser_management/serializers/__pycache__/
 
