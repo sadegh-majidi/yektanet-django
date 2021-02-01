@@ -5,22 +5,30 @@ from django.views.generic.base import RedirectView, TemplateView
 from django.core.exceptions import ValidationError
 from django.db.models import Count, Subquery, F, Avg, DurationField, OuterRef, ExpressionWrapper, FloatField
 from django.db.models.functions import TruncHour, Cast
-from django.http.response import JsonResponse
+from django.http.response import JsonResponse, HttpResponseRedirect
 from django.utils import timezone
+from rest_framework.views import APIView
+from rest_framework.viewsets import ModelViewSet
+from rest_framework.mixins import CreateModelMixin
+from rest_framework.generics import GenericAPIView, CreateAPIView
+from rest_framework.renderers import TemplateHTMLRenderer
+from rest_framework.response import Response
+from .serializers.ad_serializer import AdSerializer
 
 from .models import Advertiser, Ad, View, Click
 
 
-class ShowAllAdsListView(ListView):
+class ShowAllAdsListView(APIView):
     template_name = 'advertisement/ads.html'
-    context_object_name = 'advertisers'
+    renderer_classes = [TemplateHTMLRenderer]
+    process_ip = True
 
-    def get_queryset(self):
+    def get(self, request):
         advertisers = Advertiser.objects.all()
         for advertiser in advertisers:
             for ad in advertiser.ads.all():
-                View.objects.create(user_ip=self.request.user_ip, ad=ad, time=timezone.now())
-        return advertisers
+                View.objects.create(user_ip=request.user_ip, ad=ad, time=timezone.now())
+        return Response({'advertisers': advertisers})
 
 
 class AdClickRedirectView(RedirectView):
@@ -32,6 +40,24 @@ class AdClickRedirectView(RedirectView):
         ad = get_object_or_404(Ad, pk=kwargs['ad_id'])
         Click.objects.create(user_ip=self.request.user_ip, ad=ad, time=timezone.now())
         return ad.link
+
+
+class CreateAdView1(CreateAPIView):
+    serializer_class = AdSerializer
+    queryset = Ad.objects.all()
+
+    def create(self, request, *args, **kwargs):
+        try:
+            super().create(request, *args, **kwargs)
+        except (ValidationError, Advertiser.DoesNotExist) as e:
+            request.session['error_message'] = str(e)
+            return HttpResponseRedirect(redirect_to=reverse('advertiser_management:new_form'))
+        else:
+            return HttpResponseRedirect(redirect_to=reverse('advertiser_management:show_all'))
+
+    def perform_create(self, serializer):
+        advertiser = get_object_or_404(Advertiser, username=self.request.data.get('advertiser_username', False))
+        serializer.save(advertiser=advertiser)
 
 
 class CreateAdView(RedirectView):
