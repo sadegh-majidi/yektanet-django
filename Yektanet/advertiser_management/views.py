@@ -6,6 +6,7 @@ from django.db.models.functions import TruncHour, Cast
 from django.http.response import JsonResponse, HttpResponseRedirect
 from django.utils import timezone
 from rest_framework.views import APIView
+from rest_framework.generics import ListAPIView
 from rest_framework.viewsets import ViewSet
 from rest_framework.decorators import action
 from rest_framework.generics import CreateAPIView
@@ -16,6 +17,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.status import HTTP_403_FORBIDDEN, HTTP_200_OK, HTTP_201_CREATED
 from rest_framework.authtoken.models import Token
+from django.contrib.auth.models import update_last_login
 from .serializers.advertiser_serializer import AdvertiserSerializer
 from .serializers.login_credential_serializer import LoginCredentialSerializer
 from .permissions import IsAdvertiser
@@ -23,13 +25,15 @@ from .permissions import IsAdvertiser
 from .models import Advertiser, Ad, View, Click
 
 
-class ShowAllAdsListView(APIView):
+class ShowAllAdsListView(ListAPIView):
     template_name = 'advertisement/ads.html'
     renderer_classes = [TemplateHTMLRenderer]
+    queryset = Advertiser.objects.all()
+    serializer_class = AdvertiserSerializer
     process_ip = True
 
-    def get(self, request):
-        advertisers = Advertiser.objects.all()
+    def get(self, request, *args, **kwargs):
+        advertisers = self.get_queryset()
         for advertiser in advertisers:
             for ad in advertiser.ads.all():
                 View.objects.create(user_ip=request.user_ip, ad=ad, time=timezone.now())
@@ -63,8 +67,7 @@ class CreateAdView(CreateAPIView):
             return HttpResponseRedirect(redirect_to=reverse('advertiser_management:show_all'))
 
     def perform_create(self, serializer):
-        advertiser = get_object_or_404(Advertiser, username=self.request.data.get('advertiser_username', False))
-        serializer.save(advertiser=advertiser)
+        serializer.save(advertiser=self.request.user.advertiser)
 
 
 class NewAdFormView(APIView):
@@ -134,14 +137,9 @@ class StatisticReportsViewSet(ViewSet):
         return JsonResponse({'average_time_between_view_and_click': str(result)})
 
 
-class AdvertiserRegisterApiView(APIView):
+class AdvertiserRegisterApiView(CreateAPIView):
     permission_classes = [AllowAny]
-
-    def post(self, request):
-        serializer = AdvertiserSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(status=HTTP_201_CREATED)
+    serializer_class = AdvertiserSerializer
 
 
 class AdvertiserLoginApiView(APIView):
@@ -153,9 +151,10 @@ class AdvertiserLoginApiView(APIView):
         valid_data = serializer.validated_data
         advertiser = get_object_or_404(Advertiser, username=valid_data.get('username', ''))
         password = valid_data.get('password', '')
-        if not advertiser.check_password(password):
+        if advertiser.check_password(password):
             raise ValidationError(message='Wrong password.', code=HTTP_403_FORBIDDEN)
         token, created = Token.objects.get_or_create(user=advertiser)
+        update_last_login(None, token.user)
         return Response(
             data={
                 'auth_token': token.key
