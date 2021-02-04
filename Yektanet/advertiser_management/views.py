@@ -15,7 +15,7 @@ from rest_framework.response import Response
 from .serializers.ad_serializer import AdSerializer
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.authentication import TokenAuthentication
-from rest_framework.status import HTTP_403_FORBIDDEN, HTTP_200_OK, HTTP_201_CREATED
+from rest_framework.status import HTTP_403_FORBIDDEN, HTTP_200_OK
 from rest_framework.authtoken.models import Token
 from django.contrib.auth.models import update_last_login
 from .serializers.advertiser_serializer import AdvertiserSerializer

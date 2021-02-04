@@ -49,3 +49,29 @@ class View(BaseAdInfo):
         verbose_name='Viewed Ad',
         related_name='views'
     )
+
+
+class BaseCount(models.Model):
+    time = models.DateTimeField(verbose_name='Hour')
+    count = models.PositiveIntegerField(verbose_name='Count')
+
+    class Meta:
+        abstract = True
+
+
+class AdClickCount(BaseCount):
+    ad = models.ForeignKey(
+        to=Ad,
+        on_delete=models.CASCADE,
+        verbose_name='Ad',
+        related_name='clicks_count'
+    )
+
+
+class AdViewCount(BaseCount):
+    ad = models.ForeignKey(
+        to=Ad,
+        on_delete=models.CASCADE,
+        verbose_name='Ad',
+        related_name='views_count'
+    )

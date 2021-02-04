@@ -1,6 +1,7 @@
 # created by virtualenv automatically
 Lib/
 Scripts/
+include/
 pyvenv.cfg
 .idea/
 Yektanet/db.sqlite3
