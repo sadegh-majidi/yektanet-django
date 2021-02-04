@@ -1,5 +1,5 @@
 from celery import shared_task
-from .models import Click, View, AdClickCount, AdViewCount, Ad
+from .models import Click, View, AdClickCount, AdViewCount
 from django.db.models.functions import TruncHour
 from django.db import connection
 from django.db.models import Count, Sum
@@ -13,8 +13,8 @@ def count_sum_of_clicks_per_ad_last_hour():
     result = Click.objects.annotate(hour=TruncHour('time')).values('ad', 'hour').annotate(click=Count('id')).filter(
         hour=hour_from
     )
-    for item in result:
-        AdClickCount.objects.create(time=item['hour'], count=item['click'], ad=Ad.objects.get(pk=item['ad']))
+    result_list = [AdClickCount(time=item['hour'], count=item['click'], ad_id=item['ad']) for item in result]
+    AdClickCount.objects.bulk_create(result_list)
     return None
 
 
@@ -24,8 +24,8 @@ def count_sum_of_views_per_ad_last_hour():
     result = View.objects.annotate(hour=TruncHour('time')).values('ad', 'hour').annotate(view=Count('id')).filter(
         hour=hour_from
     )
-    for item in result:
-        AdViewCount.objects.create(time=item['hour'], count=item['view'], ad=Ad.objects.get(pk=item['ad']))
+    result_list = [AdViewCount(time=item['hour'], count=item['view'], ad_id=item['ad']) for item in result]
+    AdViewCount.objects.bulk_create(result_list)
     return None
 
 

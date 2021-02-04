@@ -9,7 +9,6 @@ https://docs.djangoproject.com/en/2.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/2.2/ref/settings/
 """
-from celery.schedules import crontab
 import os
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
@@ -133,26 +132,3 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/2.2/howto/static-files/
 
 STATIC_URL = '/static/'
-
-CELERY_BROKER_URL = 'amqp://localhost'
-
-CELERY_TIMEZONE = 'UTC'
-
-CELERY_BEAT_SCHEDULE = {
-    'save_ad_clicks_last_hour': {
-        'task': 'advertiser_management.tasks.count_sum_of_clicks_per_ad_last_hour',
-        'schedule': crontab(minute=0),
-    },
-    'save_ad_views_last_hour': {
-        'task': 'advertiser_management.tasks.count_sum_of_views_per_ad_last_hour',
-        'schedule': crontab(minute=0),
-    },
-    'get_ad_clicks_last_day': {
-        'task': 'advertiser_management.tasks.get_ad_clicks_last_day',
-        'schedule': crontab(minute=2, hour=0),
-    },
-    'get_ad_views_last_day': {
-        'task': 'advertiser_management.tasks.get_ad_views_last_day',
-        'schedule': crontab(minute=2, hour=0),
-    },
-}
